@@ -6,6 +6,7 @@ import (
   "encoding/json"
   "github.com/cloudfoundry/gosigar"
   "time"
+  "github.com/mreiferson/go-httpclient"
   "net/http"
   "bytes"
   "os"
@@ -17,6 +18,12 @@ func main() {
   var auth_token = flag.String("auth-token", "", "dashing server auth token")
   flag.Parse()
   hostname,_ := os.Hostname()
+  transport := &httpclient.Transport{
+    ConnectTimeout:        1*time.Second,
+    RequestTimeout:        10*time.Second,
+    ResponseHeaderTimeout: 5*time.Second,
+  }
+  defer transport.Close()
 
   for { 
     fmt.Println(time.Now(), "Iniciando obtención de datos de Sigar")
@@ -51,9 +58,12 @@ func main() {
 
     fmt.Println(time.Now(), "Iniciando envío de datos a Dashing")
 
+    client := &http.Client{Transport: transport}
     req, _ := http.NewRequest("POST", fmt.Sprintf("http://%s/widgets/server-%s", *dashboard_hostname, hostname), bytes.NewReader(b))
-    client := &http.Client{}
-    client.Do(req)
+    _, err := client.Do(req)
+    if err != nil {
+      fmt.Println(err)
+    }
 
     fmt.Println(time.Now(), "Fin de envío de datos a Dashing:", data)
 
