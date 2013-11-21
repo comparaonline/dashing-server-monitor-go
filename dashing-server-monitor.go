@@ -19,6 +19,7 @@ func main() {
   hostname,_ := os.Hostname()
 
   for { 
+    fmt.Println(time.Now(), "Iniciando obtención de datos de Sigar")
     avg := sigar.LoadAverage{}
     avg.Get()
 
@@ -48,11 +49,13 @@ func main() {
     }
     b,_ := json.Marshal(data)
 
+    fmt.Println(time.Now(), "Iniciando envío de datos a Dashing")
+
     req, _ := http.NewRequest("POST", fmt.Sprintf("http://%s/widgets/server-%s", *dashboard_hostname, hostname), bytes.NewReader(b))
     client := &http.Client{}
     client.Do(req)
 
-    fmt.Println(time.Now(),data)
+    fmt.Println(time.Now(), "Fin de envío de datos a Dashing:", data)
 
     time.Sleep(15*time.Second)
   }
